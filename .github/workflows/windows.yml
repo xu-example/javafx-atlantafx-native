@@ -1,0 +1,47 @@
+name: Build installer for Windows
+on: ["push"]
+
+jobs:
+  build-app:
+    strategy:
+      matrix:
+        os: [ windows-latest ]
+    name: Build the application
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: Setup Java
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '17.0.7'
+          distribution: 'graalvm'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          native-image-job-reports: 'true'
+
+#      - run: $Env:Path += ";C:\Program Files (x86)\WiX Toolset v3.11\bin"
+
+      - name: build
+        run: mvn gluonfx:build -X
+        shell: pwsh
+
+      - name: get current time
+        uses: 1466587594/get-current-time@v2
+        id: current-time
+        with:
+          format: YYYYMMDD-HH
+          utcOffset: "+08:00"
+
+      - name: upload build result
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: Test-${{ steps.current-time.outputs.formattedTime }}-${{ matrix.os }}
+          path: target\gluonfx\x86_64-windows\javafx-atlantafx-native.exe
+#      - name: 上传到 release 中
+#        uses: svenstaro/upload-release-action@v2
+#        with:
+#          repo_token: ${{ secrets.GITHUB_TOKEN }}
+#          file: target\gluonfx\x86_64-windows\JavaFX-Package-Sample*
+#          overwrite: true
+#          file_glob: true
+#          body: "这个路径无法是被"
